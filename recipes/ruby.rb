@@ -37,7 +37,11 @@ rescue LoadError
   end
 
   begin
-    chef_gem "pg"
+    chef_gem "pg" do
+      if node['postgresql']['pg_config']
+        options "-- --with-pg-config=#{node['postgresql']['pg_config']}"
+      end
+    end
   rescue Gem::Installer::ExtensionBuildError => e
     # Are we an omnibus install?
     raise if RbConfig.ruby.scan(%r{(chef|opscode)}).empty?
@@ -69,7 +73,12 @@ EOS
     end
 
     lib_builder = execute 'generate pg gem Makefile' do
-      command "#{RbConfig.ruby} extconf.rb"
+      args = ""
+      if node['postgresql']['pg_config']
+        args = "-- --with-pg-config=#{node['postgresql']['pg_config']}"
+      end
+
+      command "#{RbConfig.ruby} extconf.rb #{args}"
       cwd ext_dir
       action :nothing
     end
